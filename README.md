@@ -39,6 +39,7 @@ and obtain
 (19.683067160648062353053852999471 -20.944492858527856037779021016004) (-21.054325208519245131314861609216 -19.437084730021483486778195717869)
 trace = (-10.500000000000000000000000000202 -18.500000000000000000000000000202)
 ```
+First the rows of the matrix are displayed, and then the trace. A complex number x + i y is represented like (x y).
 
 As an other example, instead of providing the word ababb, you could provide the rational 3/2 corresponding to it via the `-r` option:
 
