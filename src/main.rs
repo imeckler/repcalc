@@ -54,6 +54,26 @@ impl M<C> {
         res
     }
 
+    fn dominant_eigenvector(&self, precision: u32) -> (C, [C; 2]) {
+        let two = Complex::with_val(precision, 2);
+        let four = Complex::with_val(precision, 4);
+        let [a, b, c, d] = &self.0;
+        // sqrt(a^2 + 4*b*c - 2*a*d + d^2)
+        // using the assumption that det = 1
+        // let x = (a.clone().square() + four*b.clone()*c.clone() - two.clone()*a.clone()*d.clone() + d.clone().square()).sqrt();
+        let x = ((a.clone() + d.clone()).square() - four.clone()).sqrt();
+        // lambda^2 - (a + d) lambda + (ad - bc) = 0
+        // lambda = ( (a+d) +/- sqrt((a + d)^2 - 4 (ad - bc)) ) / 2
+        let lambda1 = (a.clone() + d.clone() - x.clone()) / two.clone();
+        let lambda2 = (a.clone() + d.clone() + x.clone()) / two.clone();
+        match lambda1.clone().cmp_abs(&lambda2).unwrap() {
+            Ordering::Equal | Ordering::Greater =>
+                (lambda1.clone(), [lambda1 - d, c.clone()]),
+            Ordering::Less =>
+                (lambda2.clone(), [b.clone(), lambda2 - a.clone()])
+        }
+    }
+
     fn mul(self, other: Self) -> Self {
         let [a1, b1, c1, d1] = self.0;
         let [a2, b2, c2, d2] = other.0;
@@ -63,6 +83,18 @@ impl M<C> {
             c1.clone()*a2 + d1.clone()*c2,
             c1*b2 + d1*d2,
         ])
+    }
+
+    fn is_eigenvector(&self, v: [C; 2]) -> bool {
+        let [x, y] = v;
+        let epsilon = Complex::with_val(x.prec(), 0.000001);
+        let [a, b, c, d] = &self.0;
+        let ux = a.clone() * x.clone() + b.clone() * y.clone();
+        let uy = c.clone() * x.clone() + d.clone() * y.clone();
+
+        let c = ux / x;
+        // c * y should be close to uy
+        (c * y - uy).cmp_abs(&epsilon).unwrap() == Ordering::Less
     }
 }
 
@@ -257,7 +289,13 @@ fn main() {
             std::process::exit(1);
         };
 
-    let [x, y, z, w] = res.0;
+    let [x, y, z, w] = &res.0;
     println!("{} {}\n{} {}", x.clone(), y.clone(), z.clone(), w.clone());
-    println!("trace = {}", x + w);
+    println!("trace = {}", x.clone() + w.clone());
+    let (lambda, [vx, vy]) = res.dominant_eigenvector(precision);
+    if !res.is_eigenvector([vx.clone(), vy.clone()]) {
+        eprintln!("warning: output is not very close to an eigenvector, increase precision")
+    }
+    println!("dominant_eigenvalue = {}", lambda);
+    println!("dominant_eigenvector = {} {}", vx, vy);
 }
